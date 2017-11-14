@@ -235,6 +235,7 @@
   interface Decorator {
     edit: (span: JQuery, name: any, done_fn: DoneCallback) => void;
     render: (container: JQuery, team: Object | null, score: any, entryState: EntryState) => void;
+    renderScore: (container: JQuery, team: Object | null, score: any, entryState: EntryState) => void;
   }
 
   interface InitData {
@@ -367,6 +368,10 @@
         container.append(team);
         return;
     }
+  }
+
+  function defaultRenderScore(container: JQuery, team: string, score: any, state: EntryState): void {
+    container.text(score);
   }
 
   function winnerBubbles(match: Match): boolean {
@@ -921,8 +926,6 @@
         : team.score.map(s => `${s}`);
     const scoreString = score.orElse('--');
 
-    sEl.text(scoreString);
-
     const tEl = $(`<div class="team" style="width: ${opts.teamWidth + opts.scoreWidth}px;"></div>`);
     const nEl = $(`<div class="label" style="width: ${opts.teamWidth}px;"></div>`).appendTo(tEl);
 
@@ -940,6 +943,9 @@
     else if (match.loser().name === team.name) {
       tEl.addClass('lose');
     }
+
+    opts.decorator.renderScore(sEl, team.name.toNull(), scoreString,
+        teamState(team, opponent, score));
 
     tEl.append(sEl);
 
@@ -1426,11 +1432,11 @@
         opts.userData = null;
       }
 
-      if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render)) {
+      if (opts.decorator && (!opts.decorator.edit || !opts.decorator.render || !opts.decorator.renderScore)) {
         throw Error('Invalid decorator input');
       }
       else if (!opts.decorator) {
-        opts.decorator = {edit: defaultEdit, render: defaultRender};
+        opts.decorator = {edit: defaultEdit, render: defaultRender, renderScore: defaultRenderScore};
       }
 
       if (!opts.init) {
